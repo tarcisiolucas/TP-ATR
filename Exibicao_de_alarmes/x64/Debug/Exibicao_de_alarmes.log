@@ -1,0 +1,2 @@
+﻿MSVCRTD.lib(exe_main.obj) : error LNK2019: símbolo externo não resolvido, main, referenciado na função "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\x64\Debug\Exibicao_de_alarmes.exe : fatal error LNK1120: 1 externo não resolvidos
