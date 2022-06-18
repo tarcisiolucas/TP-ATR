@@ -70,41 +70,44 @@ int main() {
 	PROCESS_INFORMATION NewProcess; // Informações sobre novo processo criado
 	STARTUPINFO si; // StartUpInformation para novo processo
 
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+
 	bStatus = CreateProcess(
-		L".\\Exibicao_de_dados_do_processo\\x64\\Debug\\Exb_dados_processo.exe",
+		L"..\\x64\\Debug\\Exibicao_de_dados_do_processo.exe",
 		NULL,	// linha de comando
 		NULL,	// atributos de seguran�a: Processo
 		NULL,	// atributos de seguran�a: Thread
 		FALSE,	// heran�a de handles
 		NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,	// CreationFlags
 		NULL,	// lpEnvironment
-		L".\\Exibicao_de_dados_do_processo\\x64\\Debug",
+		L"..\\x64\\Debug",
 		&si,			// lpStartUpInfo
 		&NewProcess);	// lpProcessInformation
 	if (!bStatus) printf("Erro na criacao do processo! Codigo = %d\n", GetLastError());
 
 	bStatus = CreateProcess(
-		L".\\Exibicao_de_dados_de_otimizacao\\x64\\Debug\\Exb_dados_otmz.exe",
+		L"..\\x64\\Debug\\Exibicao_de_dados_de_otimizacao.exe",
 		NULL,	// linha de comando
 		NULL,	// atributos de seguran�a: Processo
 		NULL,	// atributos de seguran�a: Thread
 		FALSE,	// heran�a de handles
 		NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,	// CreationFlags
 		NULL,	// lpEnvironment
-		L".\\Exibicao_de_dados_de_otimizacao\\x64\\Debug\\",
+		L"..\\x64\\Debug",
 		&si,			// lpStartUpInfo
 		&NewProcess);	// lpProcessInformation
 	if (!bStatus) printf("Erro na criacao do processo! Codigo = %d\n", GetLastError());
 
 	bStatus = CreateProcess(
-		L".\\Exibicao_de_alarmes\\x64\\Debug\\Exb_alarmes.exe",
+		L"..\\x64\\Debug\\Exibicao_de_alarmes.exe",
 		NULL,	// linha de comando
 		NULL,	// atributos de seguran�a: Processo
 		NULL,	// atributos de seguran�a: Thread
 		FALSE,	// heran�a de handles
 		NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE,	// CreationFlags
 		NULL,	// lpEnvironment
-		L".\\Exibicao_de_alarmes\\x64\\\\Debug",
+		L"..\\x64\\Debug",
 		&si,			// lpStartUpInfo
 		&NewProcess);	// lpProcessInformation
 	if (!bStatus) printf("Erro na criacao do processo! Codigo = %d\n", GetLastError());
@@ -149,7 +152,7 @@ int main() {
 	DWORD dwThreadId;
 	DWORD dwExitCode = 0;
 	DWORD dwRet;
-	int i, nTecla;
+	int nTecla;
 
 
 	comunicacao = (HANDLE)_beginthreadex(

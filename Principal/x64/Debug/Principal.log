@@ -1,12 +1,11 @@
 ﻿  Principal.cpp
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(152,6): warning C4101: 'i': variável local não referenciada
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(495,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(505,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(510,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(532,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(542,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(547,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(552,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(557,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(575,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(501,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(511,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(516,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(538,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(548,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(553,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(558,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(563,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(581,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
   Principal.vcxproj -> C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\x64\Debug\Principal.exe
