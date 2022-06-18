@@ -43,8 +43,8 @@ int main() {
 				estado = true;
 			}
 		}
-
 	} while (nTipodeEvento != 0); //Loop ocorre enquanto Esc n�o for selecionado
+	
 	SetConsoleTextAttribute(cout_handle, FOREGROUND_RED);
 	std::cout << "Exibicao de Dados de Processo terminando...\n";
 

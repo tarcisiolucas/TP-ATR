@@ -151,7 +151,8 @@ int main() {
 
 
 	//Criando mutex
-	hMutex = CreateMutex(NULL, FALSE, L"Mutex");							
+	hMutex = CreateMutex(NULL, FALSE, L"Mutex");
+	if (!hMutex) printf("Erro na criacao do Mutex! Codigo = %d\n", GetLastError());
 	//CheckForError(hMutex);
 
 	//Handle para as threads
@@ -172,7 +173,8 @@ int main() {
 		0,
 		(CAST_LPDWORD)&dwThreadId
 	);
-	// colocar checagem de erro
+	if (!comunicacao) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+
 	retira_otimizacao = (HANDLE)_beginthreadex(
 		NULL,
 		0,
@@ -181,7 +183,8 @@ int main() {
 		0,
 		(CAST_LPDWORD)&dwThreadId
 	);
-	// colocar checagem de erro
+	if (!retira_otimizacao) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+	
 	retira_processo = (HANDLE)_beginthreadex(
 		NULL,
 		0,
@@ -190,7 +193,8 @@ int main() {
 		0,
 		(CAST_LPDWORD)&dwThreadId
 	);
-	// colocar checagem de erro
+	if (!retira_processo) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+
 	retira_alarme = (HANDLE)_beginthreadex(
 		NULL,
 		0,
@@ -199,7 +203,7 @@ int main() {
 		0,
 		(CAST_LPDWORD)&dwThreadId
 	);
-	// colocar checagem de erro (if ou checkerror...)
+	if (!retira_alarme) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
 
 
 	do {
@@ -223,36 +227,36 @@ int main() {
 			estado_hKeyOEvent = false;
 		}
 		else if (nTecla == keyO && estado_hKeyOEvent == false) {
+			SetEvent(hKeyOEvent);
 			SetConsoleTextAttribute(cout_handle, GREEN);
 			printf("Retirada de Dados de Otimizacao Desbloqueada\n");
 			estado_hKeyOEvent = true;
-			SetEvent(hKeyOEvent);
 		}
-		else if (nTecla == keyP && estado_hKeyPEvent == true) {	//Deixa o evento hLEvent n�o sinalizado
+		else if (nTecla == keyP && estado_hKeyPEvent == true) {
 			ResetEvent(hKeyPEvent);
 			SetConsoleTextAttribute(cout_handle, RED);
 			printf("Retirada de Dados de Processo Bloqueada\n");
 			estado_hKeyPEvent = false;
 		}
-		else if (nTecla == keyP && estado_hKeyPEvent == false) {	//Deixa o evento hLEvent sinalizado
+		else if (nTecla == keyP && estado_hKeyPEvent == false) {
 			SetEvent(hKeyPEvent);
 			SetConsoleTextAttribute(cout_handle, GREEN);
 			printf("Retirada de Dados de Processo Desbloqueada\n");
 			estado_hKeyPEvent = true;
 		}
-		else if (nTecla == keyA && estado_hKeyAEvent == true) {	//Deixa o evento hLEvent n�o sinalizado
+		else if (nTecla == keyA && estado_hKeyAEvent == true) {	
 			ResetEvent(hKeyAEvent);
 			SetConsoleTextAttribute(cout_handle, RED);
 			printf("Retirada de Alarmes Bloqueada\n");
 			estado_hKeyAEvent = false;
 		}
-		else if (nTecla == keyA && estado_hKeyAEvent == false) {	//Deixa o evento hLEvent sinalizado
+		else if (nTecla == keyA && estado_hKeyAEvent == false) {	
 			SetEvent(hKeyAEvent);
 			SetConsoleTextAttribute(cout_handle, GREEN);
 			printf("Retirada de Alarmes Desbloqueada\n");
 			estado_hKeyAEvent = true;
 		}
-		else if (nTecla == keyT) {	//Deixa o evento hLEvent n�o sinalizado
+		else if (nTecla == keyT) {	
 			SetEvent(hKeyTEvent);
 			if ((contTEvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -264,7 +268,7 @@ int main() {
 			}
 			contTEvent++;
 		}
-		else if (nTecla == keyR) {	//Deixa o evento hLEvent n�o sinalizado
+		else if (nTecla == keyR) {	
 			SetEvent(hKeyREvent);
 			if ((contREvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -276,7 +280,7 @@ int main() {
 			}
 			contREvent++;
 		}
-		else if (nTecla == keyL) {	//Deixa o evento hLEvent n�o sinalizado
+		else if (nTecla == keyL) {	
 			SetEvent(hKeyLEvent);
 			if ((contLEvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -291,7 +295,7 @@ int main() {
 		else if (nTecla == keyZ) {
 			SetEvent(hKeyZEvent);
 		}
-		else if (nTecla == ESC) {	//Deixa o evento hEscEvent sinalizado e os eventos hLEvent, hPEvent, hREvent n�o sinalizados
+		else if (nTecla == ESC) {
 			ResetEvent(hKeyCEvent);
 			ResetEvent(hKeyOEvent);
 			ResetEvent(hKeyPEvent);
@@ -311,7 +315,7 @@ int main() {
 
 	for (int i = 0; i < 4; ++i) {
 		GetExitCodeThread(hThreads[i], &dwExitCode);
-		CloseHandle(hThreads[i]);						//Apaga refer�ncia ao objeto
+		CloseHandle(hThreads[i]);						
 	}
 
 	CloseHandle(hKeyCEvent);
@@ -413,8 +417,8 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			//Verifica se h� menos itens na lista que o necess�rio
-				ReleaseMutex(hMutex);									//Lista vazia
+			if (lista.getCounter() < (index + 1)) {			
+				ReleaseMutex(hMutex);				
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
@@ -452,8 +456,8 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			//Verifica se h� menos itens na lista que o necess�rio
-				ReleaseMutex(hMutex);									//Lista vazia
+			if (lista.getCounter() < (index + 1)) {			
+				ReleaseMutex(hMutex);									
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
@@ -491,8 +495,8 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			//Verifica se h� menos itens na lista que o necess�rio
-				ReleaseMutex(hMutex);									//Lista vazia
+			if (lista.getCounter() < (index + 1)) {			
+				ReleaseMutex(hMutex);									
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);

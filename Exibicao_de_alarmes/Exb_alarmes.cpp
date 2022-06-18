@@ -44,7 +44,7 @@ int main() {
 			}
 		}
 		else if (nTipoEvento == 2) {
-			system("cls"); //Limpa as mensagens da janela
+			system("cls"); //Limpa as mensagens do console
 		}
 
 	} while (nTipoEvento != 0); //Loop ocorre enquanto Esc n�o for selecionado

@@ -46,9 +46,9 @@ public:
         return this->container[position];
     }
 
-    std::string readItem(int i) { //Fun??o de leitura, a ser usada para "remover" item da lista
+    std::string readItem(int i) { 
 
-        this->pointer++; //Abre vaga na lista
+        this->pointer++; 
         int position = (i) % (this->max);
         return this->container[position];
 
