@@ -20,28 +20,27 @@ HANDLE hKeyTEvent;
 HANDLE cout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 int main() {
-	hEscEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, L"EscEvent");
+	hEscEvent = OpenEvent(SYNCHRONIZE, FALSE, L"EscEvent");
 	hKeyTEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, L"TEvent");
-
+	
 
 	HANDLE Events[2] = { hEscEvent, hKeyTEvent};
 	DWORD ret;
 	int nTipoEvento;
-	int aux = 0;
-
+	bool estado = true;
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 1) {
-			if (aux == 0) {
+			if (estado) {
 				SetConsoleTextAttribute(cout_handle, FOREGROUND_GREEN);
-				std::cout << "Exibicao de Dados Otimização!" << std::endl;
-				aux = 1;
+				std::cout << "Exibicao de Dados de Otimizacao DESBLOQUEADA!" << std::endl;
+				estado = false;
 			}
-			else {
-				SetConsoleTextAttribute(cout_handle, FOREGROUND_RED);
-				std::cout << "Exibicao de Dados Bloqueada!" << std::endl;
-				aux = 0;
+			else if (!estado) {
+				SetConsoleTextAttribute(cout_handle, RED);
+				std::cout << "Exibicao de Dados Otimizacao BLOQUEADA!" << std::endl;
+				estado = true;
 			}
 		}
 

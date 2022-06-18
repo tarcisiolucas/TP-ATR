@@ -27,21 +27,20 @@ int main() {
 	HANDLE Events[2] = { hEscEvent, hKeyREvent };
 	DWORD ret;
 	int nTipodeEvento;
-	int aux = 0;
-
+	bool estado = true;
 	do {
-		ret = WaitForMultipleObjects(3, Events, FALSE, INFINITE);
+		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipodeEvento = ret - WAIT_OBJECT_0;
 		if (nTipodeEvento == 1) {
-			if (aux == 0) {
+			if (estado) {
 				SetConsoleTextAttribute(cout_handle, FOREGROUND_GREEN);
-				std::cout << "Exibicao de Dados Processo desbloqueada!" << std::endl;
-				aux = 1;
+				std::cout << "Exibicao de Dados de Processo DESBLOQUEADA!" << std::endl;
+				estado = false;
 			}
-			else {
-				SetConsoleTextAttribute(cout_handle, FOREGROUND_RED);
-				std::cout << "Exibicao de Dados Bloqueada!" << std::endl;
-				aux = 0;
+			else if (!estado) {
+				SetConsoleTextAttribute(cout_handle, RED);
+				std::cout << "Exibicao de Dados de Processo BLOQUEADA!" << std::endl;
+				estado = true;
 			}
 		}
 

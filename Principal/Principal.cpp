@@ -56,7 +56,6 @@ HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hK
 HANDLE hMutex; //Handle para o mutex da lista circular
 
 //Define cores de texto
-#define PURPLE  FOREGROUND_RED | FOREGROUND_GREEN
 #define WHITE  FOREGROUND_RED   | FOREGROUND_GREEN      | FOREGROUND_BLUE
 #define BLUE   FOREGROUND_BLUE| FOREGROUND_INTENSITY
 #define RED    FOREGROUND_RED   | FOREGROUND_INTENSITY
@@ -116,30 +115,40 @@ int main() {
 	
 	hEscEvent = CreateEvent(NULL, TRUE, FALSE, L"EscEvent");				//Cria do evento para a tecla ESC
 	//CheckForError(hEscEvent);
+	if (!hEscEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyCEvent = CreateEvent(NULL, TRUE, TRUE, L"CEvent");					//Cria do evento para a tecla C
 	//CheckForError(hKeyCEvent);
+	if (!hKeyCEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyOEvent = CreateEvent(NULL, TRUE, TRUE, L"OEvent");					//Cria do evento para a tecla L
 	//CheckForError(hKeyOEvent);
+	if (!hKeyOEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyPEvent = CreateEvent(NULL, TRUE, TRUE, L"PEvent");					//Cria do evento para a tecla P
 	//CheckForError(hKeyPEvent);
-	hKeyAEvent = CreateEvent(NULL, FALSE, TRUE, L"AEvent");					//Cria do evento para a tecla A
+	if (!hKeyPEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hKeyAEvent = CreateEvent(NULL, TRUE, TRUE, L"AEvent");					//Cria do evento para a tecla A
 	//CheckForError(hKeyAEvent);
+	if (!hKeyAEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyTEvent = CreateEvent(NULL, FALSE, TRUE, L"TEvent");					//Cria do evento para a tecla T
 	//CheckForError(hKeyTEvent);
-	hKeyREvent = CreateEvent(NULL, FALSE, FALSE, L"REvent");				//Cria do evento para a tecla R
+	if (!hKeyTEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hKeyREvent = CreateEvent(NULL, FALSE, TRUE, L"REvent");					//Cria do evento para a tecla R
 	//CheckForError(hKeyREvent);
-	hKeyLEvent = CreateEvent(NULL, FALSE, FALSE, L"LEvent");				//Cria do evento para a tecla L
+	if (!hKeyREvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hKeyLEvent = CreateEvent(NULL, FALSE, TRUE, L"LEvent");					//Cria do evento para a tecla L
 	//CheckForError(hKeyLEvent);
+	if (!hKeyLEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyZEvent = CreateEvent(NULL, FALSE, FALSE, L"ZEvent");				//Cria do evento para a tecla Z
 	//CheckForError(hKeyZEvent);
+	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 
 	bool estado_hKeyCEvent = true;
 	bool estado_hKeyOEvent = true;
 	bool estado_hKeyPEvent = true;
 	bool estado_hKeyAEvent = true;
-	bool estado_hKeyTEvent = true;
-	bool estado_hKeyREvent = true;
-	bool estado_hKeyLEvent = true;
+	int contTEvent = 0;
+	int contREvent = 0;
+	int contLEvent = 0;
+
 
 	//Criando mutex
 	hMutex = CreateMutex(NULL, FALSE, L"Mutex");							
@@ -243,41 +252,41 @@ int main() {
 			printf("Retirada de Alarmes Desbloqueada\n");
 			estado_hKeyAEvent = true;
 		}
-		else if (nTecla == keyT && estado_hKeyTEvent == true) {	//Deixa o evento hLEvent n�o sinalizado
-			ResetEvent(hKeyTEvent);
-			SetConsoleTextAttribute(cout_handle, RED);
-			printf("Exibicao de dados de otimizacao Bloqueada\n");
-			estado_hKeyTEvent = false;
-		}
-		else if (nTecla == keyT && estado_hKeyTEvent == false) {	//Deixa o evento hLEvent sinalizado
+		else if (nTecla == keyT) {	//Deixa o evento hLEvent n�o sinalizado
 			SetEvent(hKeyTEvent);
-			SetConsoleTextAttribute(cout_handle, GREEN);
-			printf("Exibicao de dados de otimizacao Desbloqueada\n");
-			estado_hKeyTEvent = true;
+			if ((contTEvent % 2) == 0) {
+				SetConsoleTextAttribute(cout_handle, RED);
+				printf("Exibicao de dados de otimizacao BLOQUEADA\n");
+			}
+			else {
+				SetConsoleTextAttribute(cout_handle, GREEN);
+				printf("Exibicao de dados de otimizacao DESBLOQUEADA\n");
+			}
+			contTEvent++;
 		}
-		else if (nTecla == keyR && estado_hKeyREvent == true) {	//Deixa o evento hLEvent n�o sinalizado
-			ResetEvent(hKeyREvent);
-			SetConsoleTextAttribute(cout_handle, RED);
-			printf("Exibicao de dados de Processo Bloqueada\n");
-			estado_hKeyREvent = false;
-		}
-		else if (nTecla == keyR && estado_hKeyREvent == false) {	//Deixa o evento hLEvent sinalizado
+		else if (nTecla == keyR) {	//Deixa o evento hLEvent n�o sinalizado
 			SetEvent(hKeyREvent);
-			SetConsoleTextAttribute(cout_handle, GREEN);
-			printf("Exibicao de dados de Processo Desbloqueada\n");
-			estado_hKeyREvent = true;
+			if ((contREvent % 2) == 0) {
+				SetConsoleTextAttribute(cout_handle, RED);
+				printf("Exibicao de dados de processo BLOQUEADA\n");
+			}
+			else {
+				SetConsoleTextAttribute(cout_handle, GREEN);
+				printf("Exibicao de dados de processo DESBLOQUEADA\n");
+			}
+			contREvent++;
 		}
-		else if (nTecla == keyL && estado_hKeyLEvent == true) {	//Deixa o evento hLEvent n�o sinalizado
-			ResetEvent(hKeyLEvent);
-			SetConsoleTextAttribute(cout_handle, RED);
-			printf("Exibicao de alarmes Bloqueada\n");
-			estado_hKeyLEvent = false;
-		}
-		else if (nTecla == keyL && estado_hKeyLEvent == false) {	//Deixa o evento hLEvent sinalizado
+		else if (nTecla == keyL) {	//Deixa o evento hLEvent n�o sinalizado
 			SetEvent(hKeyLEvent);
-			SetConsoleTextAttribute(cout_handle, GREEN);
-			printf("Exibicao de alarmes Desbloqueada\n");
-			estado_hKeyLEvent = true;
+			if ((contLEvent % 2) == 0) {
+				SetConsoleTextAttribute(cout_handle, RED);
+				printf("Exibicao de dados de alarme BLOQUEADA\n");
+			}
+			else {
+				SetConsoleTextAttribute(cout_handle, GREEN);
+				printf("Exibicao de dados de alarme DESBLOQUEADA\n");
+			}
+			contLEvent++;
 		}
 		else if (nTecla == keyZ) {
 			SetEvent(hKeyZEvent);
@@ -353,7 +362,7 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 			WaitForSingleObject(hMutex, INFINITE);
 			mensagem = GeraMensagemDadosProcesso();
 			if (lista.push(mensagem) == false) {
-				SetConsoleTextAttribute(cout_handle, PURPLE);
+				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
 				ret = WaitForMultipleObjects(4, EventsR, FALSE, INFINITE);		
@@ -369,7 +378,7 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 			WaitForSingleObject(hMutex, INFINITE);
 			mensagem = GeraMensagemAlarme();
 			if (lista.push(mensagem) == false) {
-				SetConsoleTextAttribute(cout_handle, PURPLE);
+				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
 				ret = WaitForMultipleObjects(4, EventsR, FALSE, INFINITE);		
@@ -384,6 +393,9 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 			}
 		}
 	} while (nTipoEvento == 0);
+	printf("Thread ComunicacaoDeDados terminando...\n");
+
+	_endthreadex(0);
 	return 0;
 
 }
@@ -421,6 +433,9 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
+	printf("Thread RetiraDadosOtimizacao terminando...\n");
+
+	_endthreadex(0);
 	return 0;
 }
 
@@ -457,6 +472,9 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
+	printf("Thread RetiraDadosProcesso terminando...\n");
+
+	_endthreadex(0);
 	return 0;
 }
 
@@ -493,6 +511,9 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
+	printf("Thread RetiraDadosAlarme terminando...\n");
+
+	_endthreadex(0);
 	return 0;
 }
 

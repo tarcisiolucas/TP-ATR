@@ -1,11 +1,11 @@
 ﻿  Principal.cpp
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(501,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(511,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(516,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(538,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(548,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(553,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(558,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(563,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
-C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(581,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(522,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(532,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(537,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(559,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(569,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(574,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(579,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(584,16): warning C4244: '=': conversão de 'int' para 'float', possível perda de dados
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Principal\Principal.cpp(602,12): warning C4244: 'argumento': conversão de 'time_t' para 'unsigned int', possível perda de dados
   Principal.vcxproj -> C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\x64\Debug\Principal.exe
