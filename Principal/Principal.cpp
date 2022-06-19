@@ -52,7 +52,7 @@ typedef unsigned* CAST_LPDWORD;
 #define keyZ	0x7A
 
 //Handles
-HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hKeyREvent, hKeyLEvent, hKeyZEvent;
+HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent;
 HANDLE hMutex; //Handle para o mutex da lista circular
 
 //Define cores de texto
@@ -113,33 +113,37 @@ int main() {
 
 	//Criando Eventos
 	
-	hEscEvent = CreateEvent(NULL, TRUE, FALSE, L"EscEvent");				//Cria do evento para a tecla ESC
+	hEscEvent = CreateEvent(NULL, TRUE, FALSE, L"EscEvent");				//Cria evento para a tecla ESC
 	//CheckForError(hEscEvent);
 	if (!hEscEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyCEvent = CreateEvent(NULL, TRUE, TRUE, L"CEvent");					//Cria do evento para a tecla C
+	hKeyCEvent = CreateEvent(NULL, TRUE, TRUE, L"CEvent");					//Cria evento para a tecla C
 	//CheckForError(hKeyCEvent);
 	if (!hKeyCEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyOEvent = CreateEvent(NULL, TRUE, TRUE, L"OEvent");					//Cria do evento para a tecla L
+	hKeyOEvent = CreateEvent(NULL, TRUE, TRUE, L"OEvent");					//Cria evento para a tecla L
 	//CheckForError(hKeyOEvent);
 	if (!hKeyOEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyPEvent = CreateEvent(NULL, TRUE, TRUE, L"PEvent");					//Cria do evento para a tecla P
+	hKeyPEvent = CreateEvent(NULL, TRUE, TRUE, L"PEvent");					//Cria evento para a tecla P
 	//CheckForError(hKeyPEvent);
 	if (!hKeyPEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyAEvent = CreateEvent(NULL, TRUE, TRUE, L"AEvent");					//Cria do evento para a tecla A
+	hKeyAEvent = CreateEvent(NULL, TRUE, TRUE, L"AEvent");					//Cria evento para a tecla A
 	//CheckForError(hKeyAEvent);
 	if (!hKeyAEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyTEvent = CreateEvent(NULL, FALSE, TRUE, L"TEvent");					//Cria do evento para a tecla T
+	hKeyTEvent = CreateEvent(NULL, FALSE, TRUE, L"TEvent");					//Cria evento para a tecla T
 	//CheckForError(hKeyTEvent);
 	if (!hKeyTEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyREvent = CreateEvent(NULL, FALSE, TRUE, L"REvent");					//Cria do evento para a tecla R
+	hKeyREvent = CreateEvent(NULL, FALSE, TRUE, L"REvent");					//Cria evento para a tecla R
 	//CheckForError(hKeyREvent);
 	if (!hKeyREvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyLEvent = CreateEvent(NULL, FALSE, TRUE, L"LEvent");					//Cria do evento para a tecla L
+	hKeyLEvent = CreateEvent(NULL, FALSE, TRUE, L"LEvent");					//Cria evento para a tecla L
 	//CheckForError(hKeyLEvent);
 	if (!hKeyLEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyZEvent = CreateEvent(NULL, FALSE, FALSE, L"ZEvent");				//Cria do evento para a tecla Z
+	hKeyZEvent = CreateEvent(NULL, FALSE, FALSE, L"ZEvent");				//Cria evento para a tecla Z
 	//CheckForError(hKeyZEvent);
 	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hFullListEvent = CreateEvent(NULL,TRUE, FALSE, L"FullListEvent");				//Cria evento para a lista cheia
+	//CheckForError(hKeyZEvent);
+	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+
 
 	bool estado_hKeyCEvent = true;
 	bool estado_hKeyOEvent = true;
@@ -335,7 +339,7 @@ int main() {
 DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
-	HANDLE EventsR[4] = { hKeyAEvent ,hKeyPEvent,hKeyOEvent, hEscEvent };
+	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
 	DWORD ret;
 	int nTipoEvento;
 	std::string mensagem;
@@ -353,8 +357,9 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 				SetConsoleTextAttribute(cout_handle, BLUE);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
-				ret = WaitForMultipleObjects(4, EventsR, FALSE, INFINITE);		
-				if (nTipoEvento != 0) {						//Tecla Esc foi escolhida
+				ResetEvent(hFullListEvent);
+				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
+				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
 					break;
 				}
 			}
@@ -369,8 +374,9 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
-				ret = WaitForMultipleObjects(4, EventsR, FALSE, INFINITE);		
-				if (nTipoEvento != 0) {						//Tecla Esc foi escolhida
+				ResetEvent(hFullListEvent);
+				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
+				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
 					break;
 				}
 			}
@@ -385,8 +391,9 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
-				ret = WaitForMultipleObjects(4, EventsR, FALSE, INFINITE);		
-				if (nTipoEvento != 0) {						//Tecla Esc foi escolhida
+				ResetEvent(hFullListEvent);
+				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
+				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
 					break;
 				}
 			}
@@ -429,6 +436,7 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
 					index++;
 					ReleaseMutex(hMutex);
+					SetEvent(hFullListEvent);
 				}
 				else {
 					ReleaseMutex(hMutex);
@@ -465,9 +473,10 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);
 					SetConsoleTextAttribute(cout_handle, BLUE);
-					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
+					cout << "mensagem de Processo:" << mensagem << " retirada\n";
 					index++;
 					ReleaseMutex(hMutex);
+					SetEvent(hFullListEvent);
 				}
 				else {
 					ReleaseMutex(hMutex);
@@ -504,9 +513,10 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);
 					SetConsoleTextAttribute(cout_handle, BLUE);
-					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
+					cout << "mensagem de Alarme:" << mensagem << " retirada\n";
 					index++;
 					ReleaseMutex(hMutex);
+					SetEvent(hFullListEvent);
 				}
 				else {
 					ReleaseMutex(hMutex);
