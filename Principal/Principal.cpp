@@ -18,7 +18,9 @@
 using namespace std;
 
 //declarando funcoes
-DWORD WINAPI ComunicacaoDeDados(LPVOID id);
+DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id);
+DWORD WINAPI ComunicacaoDeDadosProcessos(LPVOID id);
+DWORD WINAPI ComunicacaoDeDadosAlarme(LPVOID id);
 DWORD WINAPI RetiraDadosOtimizacao(LPVOID id);
 DWORD WINAPI RetiraDadosProcesso(LPVOID id);
 DWORD WINAPI RetiraAlarme(LPVOID id);
@@ -51,8 +53,9 @@ typedef unsigned* CAST_LPDWORD;
 #define keyL	0x6C
 #define keyZ	0x7A
 
+
 //Handles
-HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent;
+HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent;
 HANDLE hMutex; //Handle para o mutex da lista circular
 
 //Define cores de texto
@@ -143,6 +146,9 @@ int main() {
 	hFullListEvent = CreateEvent(NULL,TRUE, FALSE, L"FullListEvent");				//Cria evento para a lista cheia
 	//CheckForError(hKeyZEvent);
 	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	//CheckForError(hKeyZEvent);
+	hTimeEvent = CreateEvent(NULL, TRUE, FALSE, L"TimeEvent");
+	if (!hTimeEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 
 
 	bool estado_hKeyCEvent = true;
@@ -160,7 +166,7 @@ int main() {
 	//CheckForError(hMutex);
 
 	//Handle para as threads
-	HANDLE comunicacao, retira_otimizacao, retira_processo, retira_alarme;
+	HANDLE comunicacao_alarme, comunicacao_processos, comunicacao_otimizacao, retira_otimizacao, retira_processo, retira_alarme;
 
 	//criação das threads
 	DWORD dwThreadId;
@@ -169,15 +175,35 @@ int main() {
 	int nTecla;
 
 
-	comunicacao = (HANDLE)_beginthreadex(
+	comunicacao_processos = (HANDLE)_beginthreadex(
 		NULL,
 		0,
-		(CAST_FUNCTION)ComunicacaoDeDados,
+		(CAST_FUNCTION)ComunicacaoDeDadosProcessos,
 		(LPVOID)0,
 		0,
 		(CAST_LPDWORD)&dwThreadId
 	);
-	if (!comunicacao) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+	if (!comunicacao_processos) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+
+	comunicacao_alarme = (HANDLE)_beginthreadex(
+		NULL,
+		0,
+		(CAST_FUNCTION)ComunicacaoDeDadosAlarme,
+		(LPVOID)0,
+		0,
+		(CAST_LPDWORD)&dwThreadId
+	);
+	if (!comunicacao_alarme) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
+
+	comunicacao_otimizacao = (HANDLE)_beginthreadex(
+		NULL,
+		0,
+		(CAST_FUNCTION)ComunicacaoDeDadosOtimizacao,
+		(LPVOID)0,
+		0,
+		(CAST_LPDWORD)&dwThreadId
+	);
+	if (!comunicacao_otimizacao) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
 
 	retira_otimizacao = (HANDLE)_beginthreadex(
 		NULL,
@@ -313,11 +339,11 @@ int main() {
 	} while (nTecla != ESC);
 
 	//Espera todas as threads terminarem
-	HANDLE hThreads[4] = { comunicacao, retira_otimizacao, retira_processo, retira_alarme };
-	dwRet = WaitForMultipleObjects(4, hThreads, TRUE, INFINITE);
+	HANDLE hThreads[6] = { comunicacao_processos,comunicacao_alarme,comunicacao_otimizacao, retira_otimizacao, retira_processo, retira_alarme  };
+	dwRet = WaitForMultipleObjects(6, hThreads, TRUE, INFINITE);
 	//CheckForError(dwRet == WAIT_OBJECT_0);
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 6; ++i) {
 		GetExitCodeThread(hThreads[i], &dwExitCode);
 		CloseHandle(hThreads[i]);						
 	}
@@ -335,65 +361,41 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
-//Tarefa de comunicação de dados
-DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
+
+DWORD WINAPI ComunicacaoDeDadosAlarme(LPVOID id)
+{
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
 	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
 	DWORD ret;
 	int nTipoEvento;
 	std::string mensagem;
+	float timet;
+
 
 	do {
-		Sleep(1000);
+
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
+		
 
 		if (nTipoEvento == 0) {
-			WaitForSingleObject(hMutex, INFINITE);
-			mensagem = GeraMensagemDadosOTM();
-			bool confere_lista = lista.push(mensagem);
-			if (confere_lista == false) {			
-				SetConsoleTextAttribute(cout_handle, BLUE);
-				printf("Lista Cheia\n");
-				ReleaseMutex(hMutex);
-				ResetEvent(hFullListEvent);
-				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
-				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
-					break;
-				}
-			}
-			else {
-				SetConsoleTextAttribute(cout_handle, WHITE);
-				std::cout << "Mensagem: " << mensagem << " de otimizacao armazenada\n";
-				ReleaseMutex(hMutex);
-			}
-			WaitForSingleObject(hMutex, INFINITE);
-			mensagem = GeraMensagemDadosProcesso();
-			if (lista.push(mensagem) == false) {
-				SetConsoleTextAttribute(cout_handle, RED);
-				printf("Lista Cheia\n");
-				ReleaseMutex(hMutex);
-				ResetEvent(hFullListEvent);
-				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
-				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
-					break;
-				}
-			}
-			else {
-				SetConsoleTextAttribute(cout_handle, WHITE);
-				std::cout << "Mensagem: " << mensagem << " de dados processo\n";
-				ReleaseMutex(hMutex);
-			}
+
+			timet = (rand() % 4000) + 1000;
+
+			WaitForSingleObject(hTimeEvent, (DWORD)timet);
+
 			WaitForSingleObject(hMutex, INFINITE);
 			mensagem = GeraMensagemAlarme();
-			if (lista.push(mensagem) == false) {
+			if (lista.push(mensagem) == false)
+			{
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
 				ResetEvent(hFullListEvent);
 				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
-				if (nTipoEvento == 1) {						//Tecla Esc foi escolhida
+				if (nTipoEvento == 1)
+				{						//Tecla Esc foi escolhida
 					break;
 				}
 			}
@@ -402,6 +404,117 @@ DWORD WINAPI ComunicacaoDeDados(LPVOID id) {
 				std::cout << "Mensagem: " << mensagem << " de alarme armazenada\n";
 				ReleaseMutex(hMutex);
 			}
+		}
+	} while (nTipoEvento == 0);
+	printf("Thread ComunicacaoDeDados terminando...\n");
+
+	_endthreadex(0);
+	return 0;
+
+
+}
+
+
+DWORD WINAPI ComunicacaoDeDadosProcessos(LPVOID id)
+{
+
+
+	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
+	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
+	DWORD ret;
+	int nTipoEvento;
+	std::string mensagem;
+	DWORD TimeProce = 500;
+
+
+	do {
+
+		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+		nTipoEvento = ret - WAIT_OBJECT_0;
+
+		if (nTipoEvento == 0) 
+		{
+			
+			WaitForSingleObject(hTimeEvent, TimeProce);
+			
+			WaitForSingleObject(hMutex, INFINITE);
+			mensagem = GeraMensagemDadosProcesso();
+			if (lista.push(mensagem) == false) 
+			{
+				SetConsoleTextAttribute(cout_handle, RED);
+				printf("Lista Cheia\n");
+				ReleaseMutex(hMutex);
+				ResetEvent(hFullListEvent);
+				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
+				if (nTipoEvento == 1) 
+				{						//Tecla Esc foi escolhida
+					break;
+				}
+			}
+			else 
+			{
+				SetConsoleTextAttribute(cout_handle, WHITE);
+				std::cout << "Mensagem: " << mensagem << " de dados processo\n";
+				ReleaseMutex(hMutex);
+			}
+			
+		}
+	} while (nTipoEvento == 0);
+	printf("Thread ComunicacaoDeDados terminando...\n");
+
+	_endthreadex(0);
+	return 0;
+	
+
+
+}
+
+//Tarefa de comunicação de dados
+DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id) 
+{
+
+	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
+	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
+	DWORD ret;
+	int nTipoEvento;
+	std::string mensagem;
+	float timeotimizacao;
+
+	do {
+
+		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+		nTipoEvento = ret - WAIT_OBJECT_0;
+
+		if (nTipoEvento == 0) 
+		{
+
+			timeotimizacao = (rand() % 4000) + 1000;
+
+			WaitForSingleObject(hTimeEvent, (DWORD)timeotimizacao);
+
+			WaitForSingleObject(hMutex, INFINITE);
+			mensagem = GeraMensagemDadosOTM();
+			bool confere_lista = lista.push(mensagem);
+			if (confere_lista == false) 
+			{			
+				SetConsoleTextAttribute(cout_handle, BLUE);
+				printf("Lista Cheia\n");
+				ReleaseMutex(hMutex);
+				ResetEvent(hFullListEvent);
+				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
+				if (nTipoEvento == 1) 
+				{						//Tecla Esc foi escolhida
+					break;
+				}
+			}
+			else 
+			{
+				SetConsoleTextAttribute(cout_handle, WHITE);
+				std::cout << "Mensagem: " << mensagem << " de otimizacao armazenada\n";
+				ReleaseMutex(hMutex);
+			}
+
+		
 		}
 	} while (nTipoEvento == 0);
 	printf("Thread ComunicacaoDeDados terminando...\n");
