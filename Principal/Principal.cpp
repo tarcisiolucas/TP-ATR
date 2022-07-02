@@ -35,7 +35,7 @@ string GeraMensagemDadosOTM();
 //Adicionando lista circular
 #include "Lista_circular.h"
 #define SIZE_LIST 100
-ListaCircular lista = ListaCircular(SIZE_LIST);	
+ListaCircular lista = ListaCircular(SIZE_LIST);
 int index = 0;
 
 //Casting para terceiro e sexto par�metros da fun��o _beginthreadex
@@ -115,7 +115,7 @@ int main() {
 	if (!bStatus) printf("Erro na criacao do processo! Codigo = %d\n", GetLastError());
 
 	//Criando Eventos
-	
+
 	hEscEvent = CreateEvent(NULL, TRUE, FALSE, L"EscEvent");				//Cria evento para a tecla ESC
 	//CheckForError(hEscEvent);
 	if (!hEscEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
@@ -143,7 +143,7 @@ int main() {
 	hKeyZEvent = CreateEvent(NULL, FALSE, FALSE, L"ZEvent");				//Cria evento para a tecla Z
 	//CheckForError(hKeyZEvent);
 	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hFullListEvent = CreateEvent(NULL,TRUE, FALSE, L"FullListEvent");				//Cria evento para a lista cheia
+	hFullListEvent = CreateEvent(NULL, TRUE, FALSE, L"FullListEvent");				//Cria evento para a lista cheia
 	//CheckForError(hKeyZEvent);
 	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	//CheckForError(hKeyZEvent);
@@ -214,7 +214,7 @@ int main() {
 		(CAST_LPDWORD)&dwThreadId
 	);
 	if (!retira_otimizacao) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
-	
+
 	retira_processo = (HANDLE)_beginthreadex(
 		NULL,
 		0,
@@ -274,19 +274,19 @@ int main() {
 			printf("Retirada de Dados de Processo Desbloqueada\n");
 			estado_hKeyPEvent = true;
 		}
-		else if (nTecla == keyA && estado_hKeyAEvent == true) {	
+		else if (nTecla == keyA && estado_hKeyAEvent == true) {
 			ResetEvent(hKeyAEvent);
 			SetConsoleTextAttribute(cout_handle, RED);
 			printf("Retirada de Alarmes Bloqueada\n");
 			estado_hKeyAEvent = false;
 		}
-		else if (nTecla == keyA && estado_hKeyAEvent == false) {	
+		else if (nTecla == keyA && estado_hKeyAEvent == false) {
 			SetEvent(hKeyAEvent);
 			SetConsoleTextAttribute(cout_handle, GREEN);
 			printf("Retirada de Alarmes Desbloqueada\n");
 			estado_hKeyAEvent = true;
 		}
-		else if (nTecla == keyT) {	
+		else if (nTecla == keyT) {
 			SetEvent(hKeyTEvent);
 			if ((contTEvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -298,7 +298,7 @@ int main() {
 			}
 			contTEvent++;
 		}
-		else if (nTecla == keyR) {	
+		else if (nTecla == keyR) {
 			SetEvent(hKeyREvent);
 			if ((contREvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -310,7 +310,7 @@ int main() {
 			}
 			contREvent++;
 		}
-		else if (nTecla == keyL) {	
+		else if (nTecla == keyL) {
 			SetEvent(hKeyLEvent);
 			if ((contLEvent % 2) == 0) {
 				SetConsoleTextAttribute(cout_handle, RED);
@@ -339,13 +339,13 @@ int main() {
 	} while (nTecla != ESC);
 
 	//Espera todas as threads terminarem
-	HANDLE hThreads[6] = { comunicacao_processos,comunicacao_alarme,comunicacao_otimizacao, retira_otimizacao, retira_processo, retira_alarme  };
+	HANDLE hThreads[6] = { comunicacao_processos,comunicacao_alarme,comunicacao_otimizacao, retira_otimizacao, retira_processo, retira_alarme };
 	dwRet = WaitForMultipleObjects(6, hThreads, TRUE, INFINITE);
 	//CheckForError(dwRet == WAIT_OBJECT_0);
 
 	for (int i = 0; i < 6; ++i) {
 		GetExitCodeThread(hThreads[i], &dwExitCode);
-		CloseHandle(hThreads[i]);						
+		CloseHandle(hThreads[i]);
 	}
 
 	CloseHandle(hKeyCEvent);
@@ -377,7 +377,7 @@ DWORD WINAPI ComunicacaoDeDadosAlarme(LPVOID id)
 
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
-		
+
 
 		if (nTipoEvento == 0) {
 
@@ -432,45 +432,45 @@ DWORD WINAPI ComunicacaoDeDadosProcessos(LPVOID id)
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
 
-		if (nTipoEvento == 0) 
+		if (nTipoEvento == 0)
 		{
-			
+
 			WaitForSingleObject(hTimeEvent, TimeProce);
-			
+
 			WaitForSingleObject(hMutex, INFINITE);
 			mensagem = GeraMensagemDadosProcesso();
-			if (lista.push(mensagem) == false) 
+			if (lista.push(mensagem) == false)
 			{
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
 				ResetEvent(hFullListEvent);
 				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
-				if (nTipoEvento == 1) 
+				if (nTipoEvento == 1)
 				{						//Tecla Esc foi escolhida
 					break;
 				}
 			}
-			else 
+			else
 			{
 				SetConsoleTextAttribute(cout_handle, WHITE);
 				std::cout << "Mensagem: " << mensagem << " de dados processo\n";
 				ReleaseMutex(hMutex);
 			}
-			
+
 		}
 	} while (nTipoEvento == 0);
 	printf("Thread ComunicacaoDeDados terminando...\n");
 
 	_endthreadex(0);
 	return 0;
-	
+
 
 
 }
 
 //Tarefa de comunicação de dados
-DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id) 
+DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id)
 {
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
@@ -485,7 +485,7 @@ DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id)
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
 
-		if (nTipoEvento == 0) 
+		if (nTipoEvento == 0)
 		{
 
 			timeotimizacao = (rand() % 4000) + 1000;
@@ -495,26 +495,26 @@ DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id)
 			WaitForSingleObject(hMutex, INFINITE);
 			mensagem = GeraMensagemDadosOTM();
 			bool confere_lista = lista.push(mensagem);
-			if (confere_lista == false) 
-			{			
+			if (confere_lista == false)
+			{
 				SetConsoleTextAttribute(cout_handle, BLUE);
 				printf("Lista Cheia\n");
 				ReleaseMutex(hMutex);
 				ResetEvent(hFullListEvent);
 				ret = WaitForMultipleObjects(2, EventsR, FALSE, INFINITE);
-				if (nTipoEvento == 1) 
+				if (nTipoEvento == 1)
 				{						//Tecla Esc foi escolhida
 					break;
 				}
 			}
-			else 
+			else
 			{
 				SetConsoleTextAttribute(cout_handle, WHITE);
 				std::cout << "Mensagem: " << mensagem << " de otimizacao armazenada\n";
 				ReleaseMutex(hMutex);
 			}
 
-		
+
 		}
 	} while (nTipoEvento == 0);
 	printf("Thread ComunicacaoDeDados terminando...\n");
@@ -530,15 +530,15 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 	DWORD ret;
 	int nTipoEvento;
 	string mensagem;
-	char TIPO = {'1'};
+	char TIPO = { '1' };
 
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			
-				ReleaseMutex(hMutex);				
+			if (lista.getCounter() < (index + 1)) {
+				ReleaseMutex(hMutex);
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
@@ -577,8 +577,8 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			
-				ReleaseMutex(hMutex);									
+			if (lista.getCounter() < (index + 1)) {
+				ReleaseMutex(hMutex);
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
@@ -617,8 +617,8 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 0) {
 			WaitForSingleObject(hMutex, INFINITE);
-			if (lista.getCounter() < (index + 1)) {			
-				ReleaseMutex(hMutex);									
+			if (lista.getCounter() < (index + 1)) {
+				ReleaseMutex(hMutex);
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
