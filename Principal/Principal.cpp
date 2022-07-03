@@ -53,10 +53,16 @@ typedef unsigned* CAST_LPDWORD;
 #define keyL	0x6C
 #define keyZ	0x7A
 
+//Arquivo circular em disco 
+#define MAX_ARQ_SIZE 200
+typedef struct {
+	string mensagem_otm;
+} BufferOTM;
 
 //Handles
-HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent;
-HANDLE hMutex; //Handle para o mutex da lista circular
+HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, 
+		hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent, hFile;
+HANDLE hMutex, hMutexListHD; //Handles para o mutex das listas circulares
 
 //Define cores de texto
 #define WHITE  FOREGROUND_RED   | FOREGROUND_GREEN      | FOREGROUND_BLUE
@@ -531,6 +537,15 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 	int nTipoEvento;
 	string mensagem;
 	char TIPO = { '1' };
+	LONG lDistanceToMove = 0;
+	LONG lDistanceToMoveHigh = 0l;
+	DWORD dwBytesEscritos;
+	int tamanho_atual = 0;
+	char buffer[31] = "felicidade";
+
+	WaitForSingleObject(hMutexListHD, INFINITE);
+
+	
 
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
@@ -545,8 +560,27 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 				mensagem = lista.getItem(index);
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);
-					SetConsoleTextAttribute(cout_handle, BLUE);
-					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
+					//strcpy(buffer, mensagem);
+					hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.arq",
+						GENERIC_WRITE,
+						FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
+						NULL,								// atributos de seguran�a 
+						OPEN_ALWAYS,						// Sempre abre o arquivo
+						FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
+						NULL);								// Template para atributos e flags																	// Template para atributos e flags
+					//CheckForError(hFile != INVALID_HANDLE_VALUE);
+					int retornoEscrita = WriteFile(hFile, &buffer, 0, &dwBytesEscritos, NULL);
+					lDistanceToMove += sizeof(mensagem);
+					SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
+					//int retornoEscrita = WriteFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
+					tamanho_atual++;
+					if (tamanho_atual > MAX_ARQ_SIZE) {
+						lDistanceToMove = 0;
+						tamanho_atual = 1;
+					}
+
+					SetConsoleTextAttribute(cout_handle, RED);
+					cout << "mensagem de otimizacao:" << buffer << " retirada\n";
 					index++;
 					ReleaseMutex(hMutex);
 					SetEvent(hFullListEvent);
