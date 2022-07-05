@@ -1,2 +1,6 @@
 ﻿  Exb_dados_otmz.cpp
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Exibicao_de_dados_de_otimizacao\Exb_dados_otmz.cpp(73,11): warning C4477: 'printf': a cadeia de formato '%d' requer um argumento do tipo 'int', mas um argumento variadic 1 tem o tipo 'int *'
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Exibicao_de_dados_de_otimizacao\Exb_dados_otmz.cpp(73,11): warning C4313: 'printf': '%d' na cadeia de formato está em conflito com o argumento 1 do tipo 'int *'
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Exibicao_de_dados_de_otimizacao\Exb_dados_otmz.cpp(98,12): warning C4477: 'printf': a cadeia de formato '%d' requer um argumento do tipo 'int', mas um argumento variadic 1 tem o tipo 'int *'
+C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\Exibicao_de_dados_de_otimizacao\Exb_dados_otmz.cpp(98,12): warning C4313: 'printf': '%d' na cadeia de formato está em conflito com o argumento 1 do tipo 'int *'
   Exibicao_de_dados_de_otimizacao.vcxproj -> C:\Users\Tarcisio\Documents\UFMG\2022-1\Automação em Tempo Real\TP1\TP1 - Automacao em tempo real\x64\Debug\Exibicao_de_dados_de_otimizacao.exe

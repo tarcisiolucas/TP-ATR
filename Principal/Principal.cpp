@@ -55,14 +55,17 @@ typedef unsigned* CAST_LPDWORD;
 
 //Arquivo circular em disco 
 #define MAX_ARQ_SIZE 200
+#define MSG_SIZE 4
 typedef struct {
 	string mensagem_otm;
 } BufferOTM;
+HANDLE hMutexListHD, hSection;
+int* count_arq_circ = 0;
 
 //Handles
 HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, 
 		hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent, hFile;
-HANDLE hMutex, hMutexListHD; //Handles para o mutex das listas circulares
+HANDLE hMutex; //Handles para o mutex das listas circulares
 
 //Define cores de texto
 #define WHITE  FOREGROUND_RED   | FOREGROUND_GREEN      | FOREGROUND_BLUE
@@ -137,7 +140,7 @@ int main() {
 	hKeyAEvent = CreateEvent(NULL, TRUE, TRUE, L"AEvent");					//Cria evento para a tecla A
 	//CheckForError(hKeyAEvent);
 	if (!hKeyAEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyTEvent = CreateEvent(NULL, FALSE, TRUE, L"TEvent");					//Cria evento para a tecla T
+	hKeyTEvent = CreateEvent(NULL, TRUE, TRUE, L"TEvent");					//Cria evento para a tecla T
 	//CheckForError(hKeyTEvent);
 	if (!hKeyTEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyREvent = CreateEvent(NULL, FALSE, TRUE, L"REvent");					//Cria evento para a tecla R
@@ -169,6 +172,9 @@ int main() {
 	//Criando mutex
 	hMutex = CreateMutex(NULL, FALSE, L"Mutex");
 	if (!hMutex) printf("Erro na criacao do Mutex! Codigo = %d\n", GetLastError());
+	//CheckForError(hMutex);
+	hMutexListHD = CreateMutex(NULL, FALSE, L"hMutexListHD");
+	if (!hMutexListHD) printf("Erro na criacao do Mutex! Codigo = %d\n", GetLastError());
 	//CheckForError(hMutex);
 
 	//Handle para as threads
@@ -241,6 +247,21 @@ int main() {
 	);
 	if (!retira_alarme) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
 
+	//cirando arquivo mapeado para auxiliar arquivo circular
+	hSection = CreateFileMapping(
+		(HANDLE)0xFFFFFFFF,
+		NULL,
+		FILE_MAP_ALL_ACCESS,		// tipo de acesso
+		0,					// dwMaximumSizeHigh
+		MSG_SIZE,					// dwMaximumSizeLow
+		L"countArqCirc");
+	count_arq_circ = (int*)MapViewOfFile(
+		hSection,
+		FILE_MAP_WRITE,		// Direitos de acesso: leitura e escrita
+		0,					// dwOffsetHigh
+		0,					// dwOffset Low
+		MSG_SIZE);			// N�mero de bytes a serem mapeados
+
 
 	do {
 		nTecla = _getch();
@@ -293,12 +314,13 @@ int main() {
 			estado_hKeyAEvent = true;
 		}
 		else if (nTecla == keyT) {
-			SetEvent(hKeyTEvent);
 			if ((contTEvent % 2) == 0) {
+				SetEvent(hKeyTEvent);
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Exibicao de dados de otimizacao BLOQUEADA\n");
 			}
 			else {
+				ResetEvent(hKeyTEvent);
 				SetConsoleTextAttribute(cout_handle, GREEN);
 				printf("Exibicao de dados de otimizacao DESBLOQUEADA\n");
 			}
@@ -372,7 +394,7 @@ DWORD WINAPI ComunicacaoDeDadosAlarme(LPVOID id)
 {
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
-	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
+	HANDLE EventsR[2] = { hFullListEvent, hEscEvent };
 	DWORD ret;
 	int nTipoEvento;
 	std::string mensagem;
@@ -426,7 +448,7 @@ DWORD WINAPI ComunicacaoDeDadosProcessos(LPVOID id)
 
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
-	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
+	HANDLE EventsR[2] = { hFullListEvent, hEscEvent };
 	DWORD ret;
 	int nTipoEvento;
 	std::string mensagem;
@@ -480,7 +502,7 @@ DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id)
 {
 
 	HANDLE Events[2] = { hKeyCEvent, hEscEvent };
-	HANDLE EventsR[4] = { hFullListEvent, hEscEvent };
+	HANDLE EventsR[2] = { hFullListEvent, hEscEvent };
 	DWORD ret;
 	int nTipoEvento;
 	std::string mensagem;
@@ -540,8 +562,8 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 	LONG lDistanceToMove = 0;
 	LONG lDistanceToMoveHigh = 0l;
 	DWORD dwBytesEscritos;
-	int tamanho_atual = 0;
-	char buffer[31] = "felicidade";
+	int tamanho_atual = 1;
+	char buffer[39];
 
 	WaitForSingleObject(hMutexListHD, INFINITE);
 
@@ -557,38 +579,52 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
+				//WaitForSingleObject(hMutexListHD, INFINITE);
 				mensagem = lista.getItem(index);
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);
-					//strcpy(buffer, mensagem);
-					hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.arq",
-						GENERIC_WRITE,
+				
+					hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.txt",
+						GENERIC_WRITE | GENERIC_READ,
 						FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
 						NULL,								// atributos de seguran�a 
 						OPEN_ALWAYS,						// Sempre abre o arquivo
 						FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
 						NULL);								// Template para atributos e flags																	// Template para atributos e flags
 					//CheckForError(hFile != INVALID_HANDLE_VALUE);
-					int retornoEscrita = WriteFile(hFile, &buffer, 0, &dwBytesEscritos, NULL);
-					lDistanceToMove += sizeof(mensagem);
+
+					memset(buffer, 0, 39);
+					for (int i = 0; i < 39; i++)
+					{
+						buffer[i] = mensagem[i];
+					}
+
 					SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
-					//int retornoEscrita = WriteFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
+
+					int retornoEscrita = WriteFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
+					lDistanceToMove += sizeof(mensagem);
+
 					tamanho_atual++;
-					if (tamanho_atual > MAX_ARQ_SIZE) {
+					count_arq_circ++;
+					if (tamanho_atual > MAX_ARQ_SIZE)
+					{
 						lDistanceToMove = 0;
 						tamanho_atual = 1;
 					}
 
 					SetConsoleTextAttribute(cout_handle, RED);
-					cout << "mensagem de otimizacao:" << buffer << " retirada\n";
+					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
 					index++;
-					ReleaseMutex(hMutex);
 					SetEvent(hFullListEvent);
+					ReleaseMutex(hMutexListHD);
+					ReleaseMutex(hMutex);
 				}
 				else {
+					ReleaseMutex(hMutexListHD);
 					ReleaseMutex(hMutex);
 				}
 			}
+			ReleaseMutex(hMutexListHD);
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
@@ -623,7 +659,7 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 					cout << "mensagem de Processo:" << mensagem << " retirada\n";
 					index++;
 					ReleaseMutex(hMutex);
-					SetEvent(hFullListEvent);
+					SetEvent(hFullListEvent); // indica que liberou um espaço na lista
 				}
 				else {
 					ReleaseMutex(hMutex);

@@ -4,12 +4,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include<iostream>
+#include <string>
 #include "../Principal/CheckForError.h"
+
+using namespace std;
 
 #define _CHECKERROR	1	//Ativa fun??o CheckForError
 
+#define MSG_SIZE 4
+#define MAX_ARQ_SIZE 200
+
 HANDLE hEscEvent;
 HANDLE hKeyTEvent;
+HANDLE hMutexListHD, hSection, hFile;
+int *count_arq_circ = 0;
 
 
 //Define cores de texto
@@ -22,17 +30,35 @@ HANDLE cout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 int main() {
 	hEscEvent = OpenEvent(SYNCHRONIZE, FALSE, L"EscEvent");
 	hKeyTEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, L"TEvent");
-	
+	hMutexListHD = OpenMutex(SYNCHRONIZE, TRUE, L"hMutexListHD");
+
+	hSection = OpenFileMapping(
+		FILE_MAP_ALL_ACCESS,
+		FALSE,				// Handle herd�vel
+		L"countArqCirc");			
+
+	count_arq_circ = (int*)MapViewOfFile(
+		hSection,
+		FILE_MAP_WRITE,		// Direitos de acesso: leitura e escrita
+		0,					// dwOffsetHigh
+		0,					// dwOffset Low
+		MSG_SIZE);			// N�mero de bytes a serem mapeados
 
 	HANDLE Events[2] = { hEscEvent, hKeyTEvent};
 	DWORD ret;
 	int nTipoEvento;
 	bool estado = true;
+	LONG lDistanceToMove = 0;
+	LONG lDistanceToMoveHigh = 0l;
+	DWORD dwBytesEscritos;
+	int tamanho_atual = 1;
+	char buffer[39];
+
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
 		if (nTipoEvento == 1) {
-			if (estado) {
+			/*if (estado) {
 				SetConsoleTextAttribute(cout_handle, FOREGROUND_GREEN);
 				std::cout << "Exibicao de Dados de Otimizacao DESBLOQUEADA!" << std::endl;
 				estado = false;
@@ -41,7 +67,41 @@ int main() {
 				SetConsoleTextAttribute(cout_handle, RED);
 				std::cout << "Exibicao de Dados Otimizacao BLOQUEADA!" << std::endl;
 				estado = true;
+			}*/
+			//std::cout << "Exibicao de Dados de Otimizacao DESBLOQUEADA!" << std::endl;
+			//WaitForSingleObject(hMutexListHD, INFINITE);
+			printf("contagem arquivo circular: %d", *count_arq_circ);
+			if (*count_arq_circ > 0) {
+				hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.txt",
+					GENERIC_READ,
+					FILE_SHARE_READ, // abre para leitura e escrita
+					NULL,								// atributos de seguran�a 
+					OPEN_ALWAYS,						// Sempre abre o arquivo
+					FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
+					NULL);								// Template para atributos e flags																	// Template para atributos e flags
+				//CheckForError(hFile != INVALID_HANDLE_VALUE);
+
+
+				SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
+
+				int retornoEscrita = ReadFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
+				lDistanceToMove += sizeof(buffer);
+
+				tamanho_atual++;
+				cout << buffer << endl;
+				if (tamanho_atual > MAX_ARQ_SIZE)
+				{
+					lDistanceToMove = 0;
+					tamanho_atual = 1;
+				}
+				*count_arq_circ--;
+				printf("contagem arquivo circular: %d", count_arq_circ);
+				ReleaseMutex(hMutexListHD);
 			}
+			else {
+				ReleaseMutex(hMutexListHD);
+			}
+			ReleaseMutex(hMutexListHD);
 		}
 
 	} while (nTipoEvento != 0); //Loop ocorre enquanto Esc nao for selecionado
