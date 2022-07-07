@@ -64,8 +64,18 @@ int* count_arq_circ = 0;
 
 //Handles
 HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, 
-		hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent, hFile;
+		hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent, hFile, hALMessageR, hALMessageW;
 HANDLE hMutex; //Handles para o mutex das listas circulares
+
+// Pipes
+#define BUFSIZEOTM 39
+#define BUFSIZEAL 28
+#define BUFSIZEPRO 47
+
+HANDLE hPipeOTM, hPipeAL, hPipePRO;
+LPCTSTR lpszPipenameOTM = L"\\\\.\\pipe\\OTMpipe";
+LPCTSTR lpszPipenameAL = L"\\\\.\\pipe\\ALpipe";
+LPCTSTR lpszPipenamePRO = L"\\\\.\\pipe\\PROpipe";
 
 //Define cores de texto
 #define WHITE  FOREGROUND_RED   | FOREGROUND_GREEN      | FOREGROUND_BLUE
@@ -146,7 +156,7 @@ int main() {
 	hKeyREvent = CreateEvent(NULL, FALSE, TRUE, L"REvent");					//Cria evento para a tecla R
 	//CheckForError(hKeyREvent);
 	if (!hKeyREvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hKeyLEvent = CreateEvent(NULL, FALSE, TRUE, L"LEvent");					//Cria evento para a tecla L
+	hKeyLEvent = CreateEvent(NULL, TRUE, TRUE, L"LEvent");					//Cria evento para a tecla L
 	//CheckForError(hKeyLEvent);
 	if (!hKeyLEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hKeyZEvent = CreateEvent(NULL, FALSE, FALSE, L"ZEvent");				//Cria evento para a tecla Z
@@ -158,6 +168,10 @@ int main() {
 	//CheckForError(hKeyZEvent);
 	hTimeEvent = CreateEvent(NULL, TRUE, FALSE, L"TimeEvent");
 	if (!hTimeEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hALMessageR = CreateEvent(NULL, TRUE, FALSE, L"ALMessageR");
+	if (!hALMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hALMessageW = CreateEvent(NULL, TRUE, TRUE, L"ALMessageW");
+	if (!hALMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 
 
 	bool estado_hKeyCEvent = true;
@@ -247,20 +261,21 @@ int main() {
 	);
 	if (!retira_alarme) printf("Erro na criacao da thread! Codigo = %d\n", GetLastError());
 
-	//cirando arquivo mapeado para auxiliar arquivo circular
-	hSection = CreateFileMapping(
-		(HANDLE)0xFFFFFFFF,
-		NULL,
-		FILE_MAP_ALL_ACCESS,		// tipo de acesso
-		0,					// dwMaximumSizeHigh
-		MSG_SIZE,					// dwMaximumSizeLow
-		L"countArqCirc");
-	count_arq_circ = (int*)MapViewOfFile(
-		hSection,
-		FILE_MAP_WRITE,		// Direitos de acesso: leitura e escrita
-		0,					// dwOffsetHigh
-		0,					// dwOffset Low
-		MSG_SIZE);			// N�mero de bytes a serem mapeados
+	
+
+	
+
+	hPipePRO = CreateNamedPipe(
+		lpszPipenamePRO,               // pipe name
+		PIPE_ACCESS_DUPLEX,         // read/write access
+		PIPE_TYPE_MESSAGE |         // message type pipe
+		PIPE_READMODE_MESSAGE | // message-read mode
+		PIPE_WAIT,              // blocking mode
+		PIPE_UNLIMITED_INSTANCES,   // max. instances
+		BUFSIZEPRO,                    // output buffer size
+		BUFSIZEPRO,                    // input buffer size
+		1000,                          // client time-out
+		NULL);
 
 
 	do {
@@ -315,12 +330,12 @@ int main() {
 		}
 		else if (nTecla == keyT) {
 			if ((contTEvent % 2) == 0) {
-				SetEvent(hKeyTEvent);
+				ResetEvent(hKeyTEvent);
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Exibicao de dados de otimizacao BLOQUEADA\n");
 			}
 			else {
-				ResetEvent(hKeyTEvent);
+				SetEvent(hKeyTEvent);
 				SetConsoleTextAttribute(cout_handle, GREEN);
 				printf("Exibicao de dados de otimizacao DESBLOQUEADA\n");
 			}
@@ -339,12 +354,13 @@ int main() {
 			contREvent++;
 		}
 		else if (nTecla == keyL) {
-			SetEvent(hKeyLEvent);
 			if ((contLEvent % 2) == 0) {
+				ResetEvent(hKeyLEvent);
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Exibicao de dados de alarme BLOQUEADA\n");
 			}
 			else {
+				SetEvent(hKeyLEvent);
 				SetConsoleTextAttribute(cout_handle, GREEN);
 				printf("Exibicao de dados de alarme DESBLOQUEADA\n");
 			}
@@ -567,8 +583,19 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 
 	WaitForSingleObject(hMutexListHD, INFINITE);
 
-	
-
+	//Criando PIPES
+	/*hPipeOTM = CreateNamedPipe(
+		lpszPipenameOTM,               // pipe name
+		PIPE_ACCESS_DUPLEX,         // read/write access
+		PIPE_TYPE_MESSAGE |         // message type pipe
+		PIPE_READMODE_MESSAGE | // message-read mode
+		PIPE_WAIT,              // blocking mode
+		PIPE_UNLIMITED_INSTANCES,   // max. instances
+		BUFSIZEOTM,                    // output buffer size
+		BUFSIZEOTM,                    // input buffer size
+		1000,                          // client time-out
+		NULL);
+		*/
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -583,7 +610,7 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 				mensagem = lista.getItem(index);
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);
-				
+				/*
 					hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.txt",
 						GENERIC_WRITE | GENERIC_READ,
 						FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
@@ -605,26 +632,25 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 					lDistanceToMove += sizeof(mensagem);
 
 					tamanho_atual++;
-					count_arq_circ++;
 					if (tamanho_atual > MAX_ARQ_SIZE)
 					{
 						lDistanceToMove = 0;
 						tamanho_atual = 1;
 					}
-
+					*/
 					SetConsoleTextAttribute(cout_handle, RED);
 					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
 					index++;
 					SetEvent(hFullListEvent);
-					ReleaseMutex(hMutexListHD);
+					//ReleaseMutex(hMutexListHD);
 					ReleaseMutex(hMutex);
 				}
 				else {
-					ReleaseMutex(hMutexListHD);
+					//ReleaseMutex(hMutexListHD);
 					ReleaseMutex(hMutex);
 				}
 			}
-			ReleaseMutex(hMutexListHD);
+			//ReleaseMutex(hMutexListHD);
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
@@ -677,11 +703,32 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 //verificar erros
 DWORD WINAPI RetiraAlarme(LPVOID id) {
 	HANDLE Events[2] = { hKeyAEvent, hEscEvent };
-	DWORD ret;
-	int nTipoEvento;
+	HANDLE Events2[2] = { hALMessageW, hEscEvent };
+	DWORD ret, ret2;
+	int nTipoEvento, nTipoEvento2;
 	string mensagem;
 	char TIPO = { '5' };
+	char buffer[28];
+	DWORD cbWritten;
 
+	
+	hPipeAL = CreateNamedPipe(
+		lpszPipenameAL,               // pipe name
+		PIPE_ACCESS_DUPLEX,         // read/write access
+		PIPE_TYPE_MESSAGE |         // message type pipe
+		PIPE_READMODE_MESSAGE | // message-read mode
+		PIPE_WAIT,              // blocking mode
+		PIPE_UNLIMITED_INSTANCES,   // max. instances
+		BUFSIZEAL,                    // output buffer size
+		BUFSIZEAL,                    // input buffer size
+		1000,                          // client time-out
+		NULL);
+	BOOL fConnected = ConnectNamedPipe(hPipeAL, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
+
+	if (fConnected)
+	{
+		printf("Client connected\n");
+	}
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -692,14 +739,42 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
-				mensagem = lista.getItem(index);
-				if (mensagem[8] == TIPO) {
-					mensagem = lista.readItem(index);
-					SetConsoleTextAttribute(cout_handle, BLUE);
-					cout << "mensagem de Alarme:" << mensagem << " retirada\n";
-					index++;
-					ReleaseMutex(hMutex);
-					SetEvent(hFullListEvent);
+				ret2 = WaitForMultipleObjects(2, Events2, FALSE, INFINITE);
+				nTipoEvento2 = ret2 - WAIT_OBJECT_0;
+				if (nTipoEvento == 0) {
+					mensagem = lista.getItem(index);
+					if (mensagem[8] == TIPO) {
+						mensagem = lista.readItem(index);
+						SetConsoleTextAttribute(cout_handle, BLUE);
+
+						memset(buffer, 0, 28);
+						for (int i = 0; i < 28; i++)
+						{
+							buffer[i] = mensagem[i];
+						}
+						cout << "MENSAGEM DE ALARME SENDO ENVIADA\n";
+						BOOL fSuccess = WriteFile(
+							hPipeAL,        // handle to pipe
+							buffer,     // buffer to write from
+							BUFSIZEAL, // number of bytes to write
+							&cbWritten,   // number of bytes written
+							NULL);        // not overlapped I/O
+
+						if (!fSuccess)
+						{
+							printf("InstanceThread WriteFile failed, GLE= %d.\n", GetLastError());
+							break;
+						}
+						cout << "mensagem de Alarme:" << mensagem << " retirada\n";
+						index++;
+						SetEvent(hALMessageR);
+						SetEvent(hFullListEvent);
+						ResetEvent(hALMessageW);
+						ReleaseMutex(hMutex);
+					}
+					else {
+						ReleaseMutex(hMutex);
+					}
 				}
 				else {
 					ReleaseMutex(hMutex);
