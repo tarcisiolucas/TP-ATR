@@ -70,10 +70,12 @@ int main() {
 				std::cout << "Exibicao de ALARMES BLOQUEADA!" << std::endl;
 				estado = true;
 			}*/
+			printf("OOOOOOOOOOOOOOO");
 			ret2 = WaitForMultipleObjects(2, Events2, FALSE, INFINITE);
 			nTipoEvento2 = ret2 - WAIT_OBJECT_0;
-			if (nTipoEvento2 == 1)
+			if (/*nTipoEvento2 ==*/ 1)
 			{
+				printf("leitura!!!!!!!!!");
 				DWORD fSuccess = ReadFile(
 					hPipeAL,                   // pipe handle
 					buffer,                   // buffer to receive reply
