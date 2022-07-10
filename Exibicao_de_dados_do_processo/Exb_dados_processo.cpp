@@ -35,11 +35,11 @@ int main() {
 	HANDLE Events[2] = { hEscEvent, hKeyREvent };
 	HANDLE Events2[3] = { hEscEvent, hPROMessageR };
 	DWORD ret, ret2, cbRead;
-	int nTipodeEvento, nTipoEvento2;
+	int nTipodeEvento;// nTipoEvento2;
 	bool estado = true;
 	char buffer[BUFSIZEPRO];
-
-	printf("\ntentando conectar");
+	char frase[7][9];
+	printf("EXIBICAO DE DADOS DE PROCESSO:\n");
 	if (!WaitNamedPipe(lpszPipenamePRO, 10000))
 	{
 		printf("Could not open pipe: 20 second wait timed out.");
@@ -54,40 +54,43 @@ int main() {
 		OPEN_EXISTING, // opens existing pipe
 		0,             // default attributes
 		NULL);
-	if(hPipePRO) printf("\nconectado");
+	if(!hPipePRO) printf("nao conectado\n");
 
 
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipodeEvento = ret - WAIT_OBJECT_0;
-		if (/*nTipodeEvento ==*/ 1) {
-			/*if (estado) {
-				SetConsoleTextAttribute(cout_handle, FOREGROUND_GREEN);
-				std::cout << "Exibicao de Dados de Processo DESBLOQUEADA!" << std::endl;
-				estado = false;
-			}
-			else if (!estado) {
-				SetConsoleTextAttribute(cout_handle, RED);
-				std::cout << "Exibicao de Dados de Processo BLOQUEADA!" << std::endl;
-				estado = true;
-			}*/
-			printf("OOOOOOOOOOOOOOO");
+		if (nTipodeEvento == 1) {
 			ret2 = WaitForMultipleObjects(2, Events2, FALSE, INFINITE);
-			nTipoEvento2 = ret2 - WAIT_OBJECT_0;
-			if (/*nTipoEvento2 == */ 1)
-			{
-				printf("leitura!!!!!!!!!");
 				DWORD fSuccess = ReadFile(
 					hPipePRO,                   // pipe handle
 					buffer,                   // buffer to receive reply
 					BUFSIZEPRO, // size of buffer
 					&cbRead,                 // number of bytes read
 					NULL);                   // not overlapped
-				if (fSuccess) printf("\nrecebido\n");
-				printf("%s\n", buffer);
+				if (fSuccess) {
+					int pos = 0;
+					int letra = 0;
+					for (int i = 0; i < BUFSIZEPRO; i++)
+					{
+						if (buffer[i] == '|')
+						{
+							frase[pos][letra] = '\0';
+							letra = 0;
+							i++;
+							pos++;
+						}
+						frase[pos][letra] = buffer[i];
+						letra++;
+					}
+					SetConsoleTextAttribute(cout_handle, BLUE);
+					printf("\n%s NSEQ:%s PR (T):%spsi TEMP:%sC PR (G):%spsi NIVEL:%scm",
+						frase[6], frase[0], frase[2], frase[3], frase[4], frase[5]);
+
+				}
 				ResetEvent(hPROMessageR);
 				SetEvent(hPROMessageW);
-			}
+			
 		}
 	} while (nTipodeEvento != 0); //Loop ocorre enquanto Esc n�o for selecionado
 	

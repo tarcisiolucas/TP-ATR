@@ -59,12 +59,13 @@ typedef unsigned* CAST_LPDWORD;
 typedef struct {
 	string mensagem_otm;
 } BufferOTM;
-HANDLE hMutexListHD, hSection;
+HANDLE hMutexListHD, hSection, hListHDRead;
 int* count_arq_circ = 0;
+HANDLE hSemaphore;
 
 //Handles
-HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent, 
-		hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent, hFile;
+HANDLE hEscEvent, hKeyCEvent, hKeyOEvent, hKeyPEvent, hKeyAEvent, hKeyTEvent,
+hKeyREvent, hKeyLEvent, hKeyZEvent, hFullListEvent, hTimeEvent;
 HANDLE hMutex; //Handles para o mutex das listas circulares
 
 // Pipes
@@ -167,7 +168,7 @@ int main() {
 	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hFullListEvent = CreateEvent(NULL, TRUE, FALSE, L"FullListEvent");				//Cria evento para a lista cheia
 	//CheckForError(hKeyZEvent);
-	if (!hKeyZEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	if (!hFullListEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	//CheckForError(hKeyZEvent);
 	hTimeEvent = CreateEvent(NULL, TRUE, FALSE, L"TimeEvent");
 	if (!hTimeEvent) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
@@ -179,7 +180,8 @@ int main() {
 	if (!hALMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hPROMessageW = CreateEvent(NULL, TRUE, TRUE, L"ALMessageW");
 	if (!hALMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-
+	hListHDRead = CreateEvent(NULL, TRUE, FALSE, L"hListHDRead");
+	if (!hListHDRead) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 
 	bool estado_hKeyCEvent = true;
 	bool estado_hKeyOEvent = true;
@@ -197,6 +199,9 @@ int main() {
 	hMutexListHD = CreateMutex(NULL, FALSE, L"hMutexListHD");
 	if (!hMutexListHD) printf("Erro na criacao do Mutex! Codigo = %d\n", GetLastError());
 	//CheckForError(hMutex);
+
+	hSemaphore = CreateSemaphore(NULL, 0, MAX_ARQ_SIZE, L"ListSemaphore");
+	if (!hSemaphore) printf("Erro na criacao do Mutex! Codigo = %d\n", GetLastError());
 
 	//Handle para as threads
 	HANDLE comunicacao_alarme, comunicacao_processos, comunicacao_otimizacao, retira_otimizacao, retira_processo, retira_alarme;
@@ -336,7 +341,7 @@ int main() {
 		}
 		else if (nTecla == keyR) {
 			if ((contREvent % 2) == 0) {
-				SetEvent(hKeyREvent);
+				ResetEvent(hKeyREvent);
 				SetConsoleTextAttribute(cout_handle, RED);
 				printf("Exibicao de dados de processo BLOQUEADA\n");
 			}
@@ -361,6 +366,7 @@ int main() {
 			contLEvent++;
 		}
 		else if (nTecla == keyZ) {
+			ResetEvent(hKeyLEvent);
 			SetEvent(hKeyZEvent);
 		}
 		else if (nTecla == ESC) {
@@ -394,6 +400,10 @@ int main() {
 	CloseHandle(hKeyREvent);
 	CloseHandle(hKeyLEvent);
 	CloseHandle(hKeyZEvent);
+	CloseHandle(hMutexListHD);
+	CloseHandle(hListHDRead);
+	//CloseHandle(hFile);
+	CloseHandle(hSemaphore);
 	CloseHandle(hEscEvent);
 
 	return EXIT_SUCCESS;
@@ -438,8 +448,8 @@ DWORD WINAPI ComunicacaoDeDadosAlarme(LPVOID id)
 				}
 			}
 			else {
-				SetConsoleTextAttribute(cout_handle, WHITE);
-				std::cout << "Mensagem: " << mensagem << " de alarme armazenada\n";
+				//SetConsoleTextAttribute(cout_handle, WHITE);
+				//std::cout << "Mensagem: " << mensagem << " de alarme armazenada\n";
 				ReleaseMutex(hMutex);
 			}
 		}
@@ -491,8 +501,8 @@ DWORD WINAPI ComunicacaoDeDadosProcessos(LPVOID id)
 			}
 			else
 			{
-				SetConsoleTextAttribute(cout_handle, WHITE);
-				std::cout << "Mensagem: " << mensagem << " de dados processo\n";
+				//SetConsoleTextAttribute(cout_handle, WHITE);
+				//std::cout << "Mensagem: " << mensagem << " de dados processo\n";
 				ReleaseMutex(hMutex);
 			}
 
@@ -575,21 +585,16 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 	int tamanho_atual = 1;
 	char buffer[39];
 
-	WaitForSingleObject(hMutexListHD, INFINITE);
+	HANDLE hFile = CreateFile(L"..\\Exibicao_de_dados_de_otimizacao\\ArquivoCircular.txt",
+		GENERIC_WRITE | GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
+		NULL,								// atributos de seguran�a 
+		CREATE_ALWAYS,						// Sempre abre o arquivo
+		FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
+		NULL);								// Template para atributos e flags	
+	if (!hFile) printf("Erro na criação do arquivo");
+	//cout << hFile << endl;
 
-	//Criando PIPES
-	/*hPipeOTM = CreateNamedPipe(
-		lpszPipenameOTM,               // pipe name
-		PIPE_ACCESS_DUPLEX,         // read/write access
-		PIPE_TYPE_MESSAGE |         // message type pipe
-		PIPE_READMODE_MESSAGE | // message-read mode
-		PIPE_WAIT,              // blocking mode
-		PIPE_UNLIMITED_INSTANCES,   // max. instances
-		BUFSIZEOTM,                    // output buffer size
-		BUFSIZEOTM,                    // input buffer size
-		1000,                          // client time-out
-		NULL);
-		*/
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -600,30 +605,23 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 			}
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
-				//WaitForSingleObject(hMutexListHD, INFINITE);
 				mensagem = lista.getItem(index);
+				Sleep(100);
 				if (mensagem[8] == TIPO) {
-					mensagem = lista.readItem(index);
-				/*
-					hFile = CreateFile(L"..\\Arquivo_Circular\\ArquivoCircular.txt",
-						GENERIC_WRITE | GENERIC_READ,
-						FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
-						NULL,								// atributos de seguran�a 
-						OPEN_ALWAYS,						// Sempre abre o arquivo
-						FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
-						NULL);								// Template para atributos e flags																	// Template para atributos e flags
+					mensagem = lista.readItem(index);															// Template para atributos e flags
 					//CheckForError(hFile != INVALID_HANDLE_VALUE);
-
-					memset(buffer, 0, 39);
-					for (int i = 0; i < 39; i++)
+					memset(buffer, 0, 38);
+					for (int i = 0; i < 38; i++)
 					{
 						buffer[i] = mensagem[i];
 					}
-
+					buffer[38] = '\0';
+					SetEvent(hListHDRead);
 					SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
 
 					int retornoEscrita = WriteFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
-					lDistanceToMove += sizeof(mensagem);
+					
+					lDistanceToMove += sizeof(buffer);
 
 					tamanho_atual++;
 					if (tamanho_atual > MAX_ARQ_SIZE)
@@ -631,20 +629,19 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 						lDistanceToMove = 0;
 						tamanho_atual = 1;
 					}
-					*/
+					//ReleaseSemaphore(hSemaphore, 1, NULL);
+					//CloseHandle(hFile);
+					
 					SetConsoleTextAttribute(cout_handle, RED);
 					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
 					index++;
 					SetEvent(hFullListEvent);
-					//ReleaseMutex(hMutexListHD);
 					ReleaseMutex(hMutex);
 				}
 				else {
-					//ReleaseMutex(hMutexListHD);
 					ReleaseMutex(hMutex);
 				}
 			}
-			//ReleaseMutex(hMutexListHD);
 			ReleaseMutex(hMutex);
 		}
 	} while (nTipoEvento == 0);
@@ -666,22 +663,21 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 	DWORD cbWritten;
 
 	hPipePRO = CreateNamedPipe(
-		lpszPipenamePRO,               // pipe name
-		PIPE_ACCESS_DUPLEX,         // read/write access
-		PIPE_TYPE_MESSAGE |         // message type pipe
-		PIPE_READMODE_MESSAGE | // message-read mode
-		PIPE_WAIT,              // blocking mode
-		PIPE_UNLIMITED_INSTANCES,   // max. instances
-		BUFSIZEPRO,                    // output buffer size
-		BUFSIZEPRO,                    // input buffer size
-		1000,                          // client time-out
+		lpszPipenamePRO,				 // pipe name
+		PIPE_ACCESS_DUPLEX,				 // read/write access
+		PIPE_TYPE_MESSAGE |				 // message type pipe
+		PIPE_READMODE_MESSAGE |			 // message-read mode
+		PIPE_NOWAIT,					 // blocking mode
+		PIPE_UNLIMITED_INSTANCES,		 // max. instances
+		BUFSIZEPRO,                      // output buffer size
+		BUFSIZEPRO,                      // input buffer size
+		1000,                            // client time-out
 		NULL);
 	BOOL fConnected = ConnectNamedPipe(hPipePRO, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 	if (fConnected)
 	{
 		printf("Client PROCESS connected\n");
 	}
-
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -691,9 +687,6 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 				ReleaseMutex(hMutex);
 			}
 			else {
-				ret2 = WaitForMultipleObjects(2, Events2, FALSE, INFINITE);
-				nTipoEvento2 = ret2 - WAIT_OBJECT_0;
-				if (nTipoEvento2 == 0) {
 					WaitForSingleObject(hMutex, INFINITE);
 					mensagem = lista.getItem(index);
 					if (mensagem[8] == TIPO) {
@@ -705,33 +698,26 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 						{
 							buffer[i] = mensagem[i];
 						}
-						cout << "MENSAGEM DE PROCESSO SENDO ENVIADA\n";
 						BOOL fSuccess = WriteFile(
 							hPipePRO,        // handle to pipe
 							buffer,     // buffer to write from
 							BUFSIZEPRO, // number of bytes to write
 							&cbWritten,   // number of bytes written
 							NULL);        // not overlapped I/O
-						if (fSuccess) printf("mensagem enviada\n");
+						//if (fSuccess) printf("mensagem enviada\n");
 						if (!fSuccess)
 						{
 							printf("InstanceThread WriteFile failed, GLE= %d.\n", GetLastError());
 							break;
 						}
-						cout << "mensagem de Processo:" << mensagem << " retirada\n";
 						index++;
 						SetEvent(hPROMessageR);
 						ReleaseMutex(hMutex);
-						//ResetEvent(hPROMessageW);
 						SetEvent(hFullListEvent); // indica que liberou um espaço na lista
 					}
 					else {
 						ReleaseMutex(hMutex);
 					}
-				}
-				else {
-					ReleaseMutex(hMutex);
-				}
 			}
 			ReleaseMutex(hMutex);
 		}
@@ -759,7 +745,7 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 		PIPE_ACCESS_DUPLEX,         // read/write access
 		PIPE_TYPE_MESSAGE |         // message type pipe
 		PIPE_READMODE_MESSAGE | // message-read mode
-		PIPE_WAIT,              // blocking mode
+		PIPE_NOWAIT,              // blocking mode
 		PIPE_UNLIMITED_INSTANCES,   // max. instances
 		BUFSIZEAL,                    // output buffer size
 		BUFSIZEAL,                    // input buffer size
@@ -767,10 +753,6 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 		NULL);
 	BOOL fConnected = ConnectNamedPipe(hPipeAL, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 
-	if (fConnected)
-	{
-		printf("Client connected\n");
-	}
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -794,7 +776,7 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 						{
 							buffer[i] = mensagem[i];
 						}
-						cout << "MENSAGEM DE ALARME SENDO ENVIADA\n";
+						//cout << "MENSAGEM DE ALARME SENDO ENVIADA\n";
 						BOOL fSuccess = WriteFile(
 							hPipeAL,        // handle to pipe
 							buffer,     // buffer to write from
@@ -807,11 +789,10 @@ DWORD WINAPI RetiraAlarme(LPVOID id) {
 							printf("InstanceThread WriteFile failed, GLE= %d.\n", GetLastError());
 							break;
 						}
-						cout << "mensagem de Alarme:" << mensagem << " retirada\n";
+						//cout << "mensagem de Alarme:" << mensagem << " retirada\n";
 						index++;
 						SetEvent(hALMessageR);
 						SetEvent(hFullListEvent);
-						//ResetEvent(hALMessageW);
 						ReleaseMutex(hMutex);
 					}
 					else {
@@ -923,7 +904,7 @@ std::string GeraMensagemAlarme() {
 	sprintf(aux, "%06d|55|", Nseq_alarme);
 	mensagem = aux;
 	//Identificacao do alarme
-	dado = rand() % 9999;
+	dado = rand() % 9 + 1;
 	sprintf(aux, "%04d|", dado);
 	mensagem = mensagem + aux;
 	//Prioridade do alarme
