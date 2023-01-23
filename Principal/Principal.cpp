@@ -78,7 +78,7 @@ LPCTSTR lpszPipenameOTM = L"\\\\.\\pipe\\OTMpipe";
 LPCTSTR lpszPipenameAL = L"\\\\.\\pipe\\ALpipe";
 LPCTSTR lpszPipenamePRO = L"\\\\.\\pipe\\PROpipe";
 
-HANDLE hALMessageR, hALMessageW, hPROMessageR, hPROMessageW;
+HANDLE hALMessageR, hALMessageW, hPROMessageR, hPROMessageW, hOTMMessageR, hOTMMessageW;
 
 
 //Define cores de texto
@@ -176,12 +176,17 @@ int main() {
 	if (!hALMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hALMessageW = CreateEvent(NULL, TRUE, TRUE, L"ALMessageW");
 	if (!hALMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hPROMessageR = CreateEvent(NULL, TRUE, FALSE, L"ALMessageR");
-	if (!hALMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
-	hPROMessageW = CreateEvent(NULL, TRUE, TRUE, L"ALMessageW");
-	if (!hALMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hPROMessageR = CreateEvent(NULL, TRUE, FALSE, L"PROMessageR");
+	if (!hPROMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hPROMessageW = CreateEvent(NULL, TRUE, TRUE, L"PROMessageW");
+	if (!hPROMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
 	hListHDRead = CreateEvent(NULL, TRUE, FALSE, L"hListHDRead");
 	if (!hListHDRead) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hOTMMessageR = CreateEvent(NULL, TRUE, FALSE, L"OTMMessageR");
+	if (!hOTMMessageR) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hOTMMessageW = CreateEvent(NULL, TRUE, TRUE, L"OTMMessageW");
+	if (!hOTMMessageW) printf("Erro na criacao do evento! Codigo = %d\n", GetLastError());
+	hListHDRead = CreateEvent(NULL, TRUE, FALSE, L"hListHDRead");
 
 	bool estado_hKeyCEvent = true;
 	bool estado_hKeyOEvent = true;
@@ -277,6 +282,8 @@ int main() {
 
 
 	do {
+		SetConsoleTextAttribute(cout_handle, WHITE);
+		printf("digite comando do teclado:");
 		nTecla = _getch();
 		if (estado_hKeyCEvent == true && nTecla == keyC) {
 			ResetEvent(hKeyCEvent);
@@ -558,7 +565,7 @@ DWORD WINAPI ComunicacaoDeDadosOtimizacao(LPVOID id)
 			else
 			{
 				SetConsoleTextAttribute(cout_handle, WHITE);
-				std::cout << "Mensagem: " << mensagem << " de otimizacao armazenada\n";
+				//std::cout << "Mensagem: " << mensagem << " de otimizacao armazenada\n";
 				ReleaseMutex(hMutex);
 			}
 
@@ -584,8 +591,29 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 	DWORD dwBytesEscritos;
 	int tamanho_atual = 1;
 	char buffer[39];
+	DWORD cbWritten;
+	HANDLE hFile;
 
-	HANDLE hFile = CreateFile(L"..\\Exibicao_de_dados_de_otimizacao\\ArquivoCircular.txt",
+	//cout << hFile << endl;
+
+	hPipeOTM = CreateNamedPipe(
+		lpszPipenameOTM,				 // pipe name
+		PIPE_ACCESS_DUPLEX,				 // read/write access
+		PIPE_TYPE_MESSAGE |				 // message type pipe
+		PIPE_READMODE_MESSAGE |			 // message-read mode
+		PIPE_NOWAIT,					 // blocking mode
+		PIPE_UNLIMITED_INSTANCES,		 // max. instances
+		BUFSIZEOTM,                      // output buffer size
+		BUFSIZEOTM,                      // input buffer size
+		1000,                            // client time-out
+		NULL);
+
+	BOOL fConnected = ConnectNamedPipe(hPipeOTM, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
+	/*if (!fConnected)
+	{
+		printf("Client OTIMIZATION not connected\n");
+	}*/
+	hFile = CreateFile(L"..\\ArquivoCircular\\ArquivoCircular.txt",
 		GENERIC_WRITE | GENERIC_READ,
 		FILE_SHARE_READ | FILE_SHARE_WRITE, // abre para leitura e escrita
 		NULL,								// atributos de seguran�a 
@@ -593,8 +621,6 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 		FILE_ATTRIBUTE_NORMAL,				// acesso síncrono
 		NULL);								// Template para atributos e flags	
 	if (!hFile) printf("Erro na criação do arquivo");
-	//cout << hFile << endl;
-
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -606,7 +632,6 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 			else {
 				WaitForSingleObject(hMutex, INFINITE);
 				mensagem = lista.getItem(index);
-				Sleep(100);
 				if (mensagem[8] == TIPO) {
 					mensagem = lista.readItem(index);															// Template para atributos e flags
 					//CheckForError(hFile != INVALID_HANDLE_VALUE);
@@ -616,7 +641,21 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 						buffer[i] = mensagem[i];
 					}
 					buffer[38] = '\0';
-					SetEvent(hListHDRead);
+					
+					BOOL fSuccess = WriteFile(
+						hPipeOTM,        // handle to pipe
+						buffer,     // buffer to write from
+						sizeof(buffer), // number of bytes to write
+						&cbWritten,   // number of bytes written
+						NULL);        // not overlapped I/O
+					//if (fSuccess) printf("mensagem enviada\n");
+					if (!fSuccess)
+					{
+						printf("InstanceThread WriteFile failed, GLE= %d.\n", GetLastError());
+						break;
+					}
+					//SetEvent(hListHDRead);
+					SetEvent(hOTMMessageR);
 					SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
 
 					int retornoEscrita = WriteFile(hFile, &buffer, sizeof(buffer), &dwBytesEscritos, NULL);
@@ -633,7 +672,7 @@ DWORD WINAPI RetiraDadosOtimizacao(LPVOID id) {
 					//CloseHandle(hFile);
 					
 					SetConsoleTextAttribute(cout_handle, RED);
-					cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
+					//cout << "mensagem de otimizacao:" << mensagem << " retirada\n";
 					index++;
 					SetEvent(hFullListEvent);
 					ReleaseMutex(hMutex);
@@ -674,10 +713,10 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 		1000,                            // client time-out
 		NULL);
 	BOOL fConnected = ConnectNamedPipe(hPipePRO, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
-	if (fConnected)
+	/*if (!fConnected)
 	{
-		printf("Client PROCESS connected\n");
-	}
+		printf("Client PROCESS not connected\n");
+	}*/
 	do {
 		ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
 		nTipoEvento = ret - WAIT_OBJECT_0;
@@ -687,6 +726,9 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 				ReleaseMutex(hMutex);
 			}
 			else {
+				ret2 = WaitForMultipleObjects(2, Events2, FALSE, INFINITE);
+				nTipoEvento2 = ret2 - WAIT_OBJECT_0;
+				if (nTipoEvento2 == 0) {
 					WaitForSingleObject(hMutex, INFINITE);
 					mensagem = lista.getItem(index);
 					if (mensagem[8] == TIPO) {
@@ -718,6 +760,7 @@ DWORD WINAPI RetiraDadosProcesso(LPVOID id) {
 					else {
 						ReleaseMutex(hMutex);
 					}
+				}
 			}
 			ReleaseMutex(hMutex);
 		}
